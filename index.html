@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preload" as="audio" href="assets/audio/2p_see_u_again.mp3">
+<link rel="preload" as="audio" href="assets/audio/2p_argument.mp3">
+<link rel="preload" as="audio" href="assets/audio/3p_gpt5.mp3">
+<link rel="preload" as="audio" href="assets/audio/2p_goat.mp3">
+<link rel="preload" as="audio" href="assets/audio/1p_EN2CH.mp3">
+<link rel="preload" as="audio" href="assets/audio/1p_CH2EN.mp3">
+<link rel="preload" as="audio" href="/data/yxs_data/projects_yxs/VibeVoice/assets/audio/1p_CH2EN.mp3">
+<link rel="preload" as="audio" href="assets/audio/4p_climate_100min.mp3">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+<title>U-Codec</title>
+<style>
+  :root {
+    --bg:#ffffff;
+    --card:#ffffff;
+    --muted:#555555;
+    --text:#000000;
+    --border:#dddddd;
+    --accent:#0066cc;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    color:var(--text);
+    background: var(--bg);
+    font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    /* 去掉分页吸附与固定高度，整体自然流式 */
+  }
+
+  /* 容器：流式堆叠，不限制高度 */
+  .wrap {
+    max-width:1100px;
+    width:min(92vw,1100px);
+    margin:0 auto;
+    padding:24px 0;
+  }
+
+  /* 小号全局间距：让内容紧凑连续 */
+  section.page { padding: 16px 16px; }
+  h1 { margin:0 0 12px; font-size:clamp(28px,4vw,40px); text-align:center; }
+  h2 { margin:16px 0 10px; font-size:22px; }
+  h3 { margin:8px 0 6px; font-size:16px; font-weight:600; color:#222; }
+  .muted { color:var(--muted); }
+
+  .links a { text-decoration: none; color: var(--accent); font-weight: 500; }
+  .links a:hover { text-decoration: underline; }
+  .links .sep { margin: 0 6px; color: var(--muted); }
+
+  .case {
+    margin: 32px 0 24px;   /* 上方 32px 留白，下方 24px */
+  }
+
+  /* 音频+转写纵向排布（无需拉伸） */
+  .sync-block { display:block; }
+
+  audio { width:100%; display:block; margin:6px 0 8px; }
+
+  /* 只保留文本框；限制自身高度并滚动，避免溢出叠到下一个 case */
+  .transcript {
+    max-height: 20vh;          /* 需要更紧凑可调成 30vh / 28vh */
+    overflow:auto;
+    padding:8px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fff;
+    scroll-behavior:smooth;
+  }
+
+  /* 行内文本：长词/URL 自动换行，绝不撑破容器 */
+  .line {
+    display:grid;
+    grid-template-columns:84px 75px 1fr;
+    gap:10px;
+    padding:8px 10px;
+    border-radius:10px;
+    border:1px solid transparent;
+    cursor:pointer;
+  }
+  .line:hover { background:#f7f7f7; border-color:#eee; }
+  .line.active { background:rgba(0,102,204,0.08); border-color:#0066cc; }
+
+  .ts, .spk {
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    color:#333; font-size:14px; align-self:center; opacity:.9;
+    white-space:nowrap;
+  }
+  .ts { text-align:right; }
+  .spk { text-align:left; }
+  .txt {
+    white-space:pre-wrap;
+    word-break:break-word;      /* 关键：长词断行 */
+    overflow-wrap:anywhere;     /* 关键：避免撑破容器 */
+  }
+
+  /* 移除所有固定高度链条，避免内容被强制压缩 */
+  .card, .scroll, .sync-grid { height:auto; min-height:0; }
+
+  /* Scrollable table container */
+  .scrollable-table {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #ccc; /* Optional: Add a border for better visibility */
+  }
+
+  /* Table styling */
+  .scrollable-table table {
+    width: auto; /* Let the table expand based on content */
+    min-width: 100%; /* Ensure the table is at least as wide as the container */
+    border-collapse: collapse; /* Optional: Merge borders for a cleaner look */
+  }
+
+  /* Column styling */
+  .scrollable-table th,
+  .scrollable-table td {
+    min-width: 200px; /* Set a minimum width for each column */
+    padding: 12px; /* Add padding for better spacing */
+    text-align: center; /* Center-align content */
+    white-space: nowrap; /* Prevent text from wrapping */
+    border: 1px solid #ddd; /* Optional: Add borders to cells */
+  }
+
+  /* Optional: Add a hover effect to rows */
+  .scrollable-table tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+
+  @layer base {
+    a[href^="http"] {
+      @apply text-blue-500;
+    }
+
+    a:hover {
+      @apply text-blue-700 underline;
+    }
+
+    h1 {
+      @apply mb-6 text-4xl font-bold text-gray-900 text-center;
+    }
+
+    h2 {
+      @apply mb-3 pt-4 text-2xl font-bold tracking-tight text-gray-900;
+    }
+
+    h4 {
+      @apply mb-4 pt-12 text-3xl font-semibold text-gray-900;
+    }
+
+    h5 {
+      @apply mb-3 pt-4 text-2xl font-bold tracking-tight text-gray-900;
+    }
+
+    p {
+      @apply mb-4 font-normal text-gray-900 leading-relaxed;
+    }
+  }
+
+  @layer components {
+    .list-select {
+      @apply block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0;
+    }
+
+    .tooltip {
+      position: absolute;
+      text-align: center;
+      padding: 8px;
+      font: 12px sans-serif;
+      background: lightsteelblue;
+      border: 0;
+      border-radius: 8px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .text-p {
+      @apply mb-4 font-normal text-gray-900 leading-relaxed;
+    }
+
+    .author {
+      @apply font-medium mr-2 pb-1 text-gray-900 inline-block;
+    }
+
+    .affiliation {
+      @apply font-medium mr-2 pb-1 text-gray-900 block;
+    }
+  }
+</style>
+
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- 首页：和后面 demo 自然续上 -->
+  <section class="page" id="overview">
+    <header>
+      <h1 style="font-size: 2.3em;">U-Codec: Ultra Low Frame-rate Neural Speech Codec for Fast High-fidelity Speech Generation</h1>
+      <!-- <p class="links" style="text-align:center; margin:0 0 4px;">
+        <a href="https://aka.ms/GeneralAI" target="_blank">MSRA GeneralAI Group</a>
+      </p> -->
+      <p class="links" style="text-align:center; margin:0 0 14px;">
+        <a href="https://www.arxiv.org/abs/2510.16718" target="_blank">📄 Report</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/YangXusheng-yxs/CodecFormer_5Hz" target="_blank"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> Code</a>
+        <span class="sep">·</span>
+        <a href="https://huggingface.co/shaunxsyang/U-Codec" target="_blank">🤗 Hugging Face</a>
+
+      </p>
+
+      <p class="muted" style="margin:0;">
+        We propose <b >U-Codec</b>, an <b >U</b>ltra low frame-rate neural speech <b >Codec</b> that achieves high-fidelity reconstruction and fast generation via an extremely frame-rate at 5Hz (5 frames per second). 
+Extreme compression at 5Hz typically leads to severe intelligibility and spectral detail loss, we overcome this by integrating a Transformer-based inter-frame long-term dependency module and systematically optimizing residual vector quantization (RVQ) depth and codebook size. 
+Moreover, we apply U-Codec into a large language model (LLM)-based auto-regressive TTS model, which leverages global and local hierarchical architecture to effectively capture dependencies across multi-layer tokens. We extend its application to from 3 RVQ at 50Hz up to 32 RVQ layers at 5Hz.
+Experimental results demonstrate that U-Codec improves LLM-based TTS inference speed by around 3 x  over high-frame-rate codecs, while preserving similarity and naturalness. 
+These results validate the feasibility of using highly compressed 5Hz discrete tokens for fast, high-quality speech synthesis.
+      </p>
+      
+      <div style="display:flex; justify-content:center; align-items:flex-start; gap:60px; margin:20px 0; width:100%;">
+        <div style="flex:1; text-align:center;">
+          <img src="assets/image/fig1.png" alt="U-Codec Framework" style="width:100%; height:400px; object-fit:contain;">
+        <p class="muted" style="margin:0; font-family: 'Cambria', 'Garamond', 'Times New Roman', serif; font-size: 16px; color: #111; text-align:left;">
+        <b > Fig.1 Reconstruct quality on varying the frame rate of different codecs, where bubble size indicates the number of RVQ layers. Compared to previous systems, such as EnCodec, Mimi, and DAC operating at higher frame rates, our proposed codec achieves competitive PESQ performance under ultra low frame rates (5Hz). </b>
+      </p>
+        </div>
+        <div style="flex:1; text-align:center;">
+          <img src="assets/image/fig2.png" alt="MOS Preference Results" style="width:100%; height:400px; object-fit:contain;">
+           <p class="muted" style="margin:0; font-family: 'Cambria', 'Garamond', 'Times New Roman', serif; font-size: 16px; color: #111; text-align:left;">
+        <b > Fig.2 Architecture and training of our U-Codec at 5Hz. The encoder (left) consists of convolutional layers followed by a Transformer to capture long-term dependencies. Latent features are quantized through factorized residual vector quantization (FRVQ) and optimized for high-fidelity reconstruction. The decoder (right) mirrors the encoder to synthesize the output waveform.  </b>
+      </p>
+        </div>
+      </div>
+    </header>
+  </section>
+
+  <div class="mt-8 mb-8">
+    <h2 id="open-source">Open-Source</h2>
+    <p>
+      We open-source U-Codec at 12.5Hz and 5Hz, along with inference and training codes, and are preparing to release U-Codec-based TTS (based on CodecFormer network). These will provide diverse configurations and multiple frame rates to support broader exploration of speech language modeling.
+    </p>        
+  </div>
+
+  
+
+   <div class="mt-8 mb-8" id="audio-quality">
+          <h2>Low Frame-rate Speech Reconstruction Quality</h2>
+        </div>
+        <div class="mt-8 mb-8">
+          <p>
+            Neural speech codecs often degrade at low frame rates. 
+            Here, we showcase U-Codec’s superior reconstruction quality over other advanced codecs.
+          </p>
+        </div>
+
+        <div class="scrollable-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Ground-Truth</th>
+                <th>U-Codec 5Hz 32RVQ 
+                
+                </th>
+                <th>U-Codec 5Hz 16RVQ
+                
+                </th>
+                <th>Mimi 12.5Hz 8RVQ
+                  <!-- <br>75tok/s, Num_VQ=6</br> -->
+                </th>
+                <th>WavTokenizer-large 75Hz 1RVQ
+                  <!-- <br>75tok/s, Num_VQ=1</br> -->
+                </th>
+                <th>DAC 75Hz 8RVQ
+                  <!-- <br>75tok/s, Num_VQ=1</br> -->
+                </th>
+                <th>Encodec 75Hz 8RVQ
+                  <!-- <br>150tok/s, Num_VQ=2</br> -->
+                </th>
+                <th>SpeechTokenizer 50Hz 8RVQ
+                  <!-- <br>150tok/s, Num_VQ=2</br> -->
+                </th>
+                <th>DualCodec 12.5Hz 6RVQ
+                  <!-- <br>75tok/s, Num_VQ=6</br> -->
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row for 2.wav -->
+<tr>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/gt/672-122797-0000.wav">
+    </audio>
+    Lang: EN
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ32_c256/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ16_c4096/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/mimi_RVQ8/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/wavtokenizer_16kHz/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/DAC_RVQ12/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/encodec_RVQ8/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/speechtokenizer_16kHz/672-122797-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/dualcodec_16kHz/672-122797-0000.wav">
+    </audio>
+  </td>
+
+</tr>
+
+<!-- Row for 3.wav -->
+<tr>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/gt/908-31957-0024.wav">
+    </audio>
+    Lang: EN
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ32_c256/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ16_c4096/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/mimi_RVQ8/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/wavtokenizer_16kHz/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/DAC_RVQ12/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/encodec_RVQ8/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/speechtokenizer_16kHz/908-31957-0024.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/dualcodec_16kHz/908-31957-0024.wav">
+    </audio>
+  </td>
+
+</tr>
+
+<!-- Row for 61-70968-0003_0q.wav -->
+<tr>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/gt/2961-961-0000.wav">
+    </audio>
+    Lang: EN
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ32_c256/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ16_c4096/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/mimi_RVQ8/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/wavtokenizer_16kHz/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/DAC_RVQ12/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/encodec_RVQ8/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/speechtokenizer_16kHz/2961-961-0000.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/dualcodec_16kHz/2961-961-0000.wav">
+    </audio>
+  </td>
+
+</tr>
+
+<!-- Row for 672-122797-0043_0q.wav -->
+<tr>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/gt/8555-292519-0013.wav">
+    </audio>
+    Lang: EN
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ32_c256/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/exp_5hz_RVQ16_c4096/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/mimi_RVQ8/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/wavtokenizer_16kHz/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/DAC_RVQ12/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/encodec_RVQ8/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/speechtokenizer_16kHz/8555-292519-0013.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/audio/dualcodec_16kHz/8555-292519-0013.wav">
+    </audio>
+  </td>
+
+</tr>
+
+    </audio>
+  </td>
+</tr>
+    </tbody>
+  </table>
+</div>
+<!-- <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+  <figure>
+    <img src="codec_recon_result.png" alt="WER results of codec-reconstructed RVQ-1 audio Result Visualization" style="max-width: 800px; height: auto;">
+    <figcaption>Figure: Codec audio reconstruction results around 75token/s and 0.75kbps bitrate.</figcaption>
+  </figure> 
+  </div> -->
+
+
+<div class="mt-8 mb-8">
+<h2>Text-to-Speech Performance</h2>
+<!-- <p>We randomly pick output samples from Seed-TTS-Eval set. </p> -->
+</div>
+        <div class="mt-8 mb-8">
+          <p>
+          Compared to the baseline of UniAudio, our U-Codec achieves higher TTS quality at 5Hz, with better timbre similarity, lower word error rate, and more natural prosody.
+          </p>
+        </div>
+<div class="scrollable-table">
+
+
+        <div class="mt-8 mb-8">
+          <div class="mx-auto text-sm text-left rtl:text-right text-gray-900" style="overflow-x: auto;">
+              <table id="tts-general-table" style="width:120%; border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align: center; width: 15%;">Text</th>
+                  <th style="text-align: center; width: 10%;">Reference Audio</th>
+                  <th style="text-align: center; width: 10%;">U-Codec-8RVQ-c16384 5Hz</th>
+                  <th style="text-align: center; width: 10%;">U-Codec-16RVQ-c4096 5Hz</th>
+                  <th style="text-align: center; width: 10%;">U-Codec-32RVQ-c256 5Hz</th>
+                  <th style="text-align: center; width: 10%;">U-Codec-100RVQ-c4 5Hz</th>
+                  <th style="text-align: center; width: 10%;">U-Codec-8RVQ-c1024 12.5Hz</th>
+                  <th style="text-align: center; width: 10%;">UniAudio (reproduced) 25Hz</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="scrollable-table">
+                  <td style="word-wrap: break-word; word-break: break-word; white-space: normal;">
+                    FORTHWITH ALL RAN TO THE OPENING OF THE TENT TO SEE WHAT MIGHT BE AMISS BUT MASTER WILL WHO PEEPED OUT FIRST NEEDED NO MORE THAN ONE GLANCE.
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system1/prompt/tts_61-70968-0010.wav">
+                    </audio>
+                    <!-- Play the song from the genre Sunshine Reggae that appeals to me. -->
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system1/gen/tts_61-70968-0010_sampling_sample4.wav">
+                    </audio>
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system2/gen/tts_61-70968-0010_sampling_sample4.wav">
+                    </audio>
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system3/gen/tts_61-70968-0010_sampling_sample0.wav">
+                    </audio>
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system4/gen/tts_61-70968-0010_sampling_sample1.wav">
+                    </audio>
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system5/gen/tts_61-70968-0010_sampling_sample0.wav">
+                    </audio>
+                  </td>
+                  <td>
+                    <audio controls preload="none">
+                      <source src="assets/smos/system6/gen/tts_61-70968-0010_sampling_sample0.wav">
+                    </audio>
+                  </td>
+                </tr>
+                <!-- Row for common_voice_en_22391641-common_voice_en_22391761.wav -->
+<!-- Row for common_voice_en_22391641-common_voice_en_22391761.wav -->
+<tr class="scrollable-table">
+  <td style="word-wrap: break-word; word-break: break-word; white-space: normal;">
+    SOMEONE ELSE TOLD A STORY NOT PARTICULARLY EFFECTIVE WHICH I SAW HE WAS NOT FOLLOWING.  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/prompt/tts_121-127105-0001.wav">
+    </audio>
+    <!-- Almost always, there are enough prizes donated that anyone who enters will get one. -->
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/gen/tts_121-127105-0001_sampling_sample0.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system2/gen/tts_121-127105-0001_sampling_sample1.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system3/gen/tts_121-127105-0001_sampling_sample4.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system4/gen/tts_121-127105-0001_sampling_sample1.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system5/gen/tts_121-127105-0001_sampling_sample2.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system6/gen/tts_121-127105-0001_sampling_sample1.wav">
+    </audio>
+  </td>
+</tr>
+
+<!-- Row for common_voice_en_22771349-common_voice_en_22771350.wav -->
+<tr class="scrollable-table">
+  <td style="word-wrap: break-word; word-break: break-word; white-space: normal;">
+    THEN DEAR SAID MISSUS WHITNEY YOU MUST BE KINDER TO HER THAN EVER THINK WHAT IT WOULD BE FOR ONE OF YOU TO BE AWAY FROM HOME EVEN AMONG FRIENDS.  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/prompt/tts_237-126133-0002.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/gen/tts_237-126133-0002_sampling_sample0.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system2/gen/tts_237-126133-0002_sampling_sample0.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system3/gen/tts_237-126133-0002_sampling_sample0.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system4/gen/tts_237-126133-0002_sampling_sample1.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system5/gen/tts_237-126133-0002_sampling_sample0.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system6/gen/tts_237-126133-0002_sampling_sample0.wav">
+    </audio>
+  </td>
+</tr>
+
+<!-- Row for common_voice_en_524057-common_voice_en_524059.wav -->
+<tr class="scrollable-table">
+  <td style="word-wrap: break-word; word-break: break-word; white-space: normal;">
+    WE ARE LOSING TIME AND THE FACT IS I HAVE NOT COME ALL THIS WAY TO TAKE A LITTLE SAIL UPON A POND ON A RAFT.
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/prompt/tts_260-123286-0006.wav">
+    </audio>
+    <!-- However, the authors ignore a very large body of work on tone mapping. -->
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system1/gen/tts_260-123286-0006_sampling_sample2.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system2/gen/tts_260-123286-0006_sampling_sample2.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system3/gen/tts_260-123286-0006_sampling_sample1.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system4/gen/tts_260-123286-0006_sampling_sample1.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system5/gen/tts_260-123286-0006_sampling_sample4.wav">
+    </audio>
+  </td>
+  <td>
+    <audio controls preload="none">
+      <source src="assets/smos/system6/gen/tts_260-123286-0006_sampling_sample1.wav">
+    </audio>
+  </td>
+</tr>
+
+
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+  <!-- <section class="page" id="demo3">
+    <h2>Cross-Lingual</h2>
+
+    <div class="case" data-key="demo3-a" data-json="assets/text/1p_CH2EN_gt_timestamp.json">
+      <h3>Mandarin to English</h3>
+      <div class="sync-block">
+        <audio id="audio-demo3-a" controls preload="metadata">
+          <source src="assets/audio/1p_CH2EN.mp3" type="audio/mpeg">
+        </audio>
+        <div class="transcript" id="trans-demo3-a"></div>
+      </div>
+    </div>
+
+    <div class="case" data-key="demo3-b" data-json="assets/text/1p_EN2CH_gt_timestamp.json">
+      <h3>English to Mandarin</h3>
+      <div class="sync-block">
+        <audio id="audio-demo3-b" controls preload="metadata">
+          <source src="assets/audio/1p_EN2CH.mp3" type="audio/mpeg">
+        </audio>
+        <div class="transcript" id="trans-demo3-b"></div>
+      </div>
+    </div>
+
+  </section> -->
+
+<!-- <section class="page" id="demo3"></section> -->
+
+<section class="page" id="citation">
+  <h2>Citation</h2>
+  <pre><code>@inproceedings{U-Codec,
+  title     = {U-Codec: Neural Speech Codec under Extreme Temporal Compression for Fast
+High-fidelity Speech Generation},
+  author    = {Anonymous authors},
+  booktitle = {arXiv},·
+  year      = {2025}
+}</code></pre>
+</section>
+
+
+<!-- <footer style="margin:32px 0 16px; font-size:0.85em; color:#888; text-align:center;">
+  * Timestamps are derived from generated audio and may contain errors.
+</footer> -->
+
+
+<script>
+/* ---- 全局互斥播放：一个播放，其他暂停 ---- */
+const allAudios = Array.from(document.querySelectorAll('audio'));
+allAudios.forEach(p => p.addEventListener('play', () => {
+  allAudios.forEach(o => { if (o !== p) o.pause(); });
+}));
+
+/* ---- 对齐播放器 ---- */
+function mmssms(t){
+  const m = Math.floor(t/60), s = Math.floor(t%60), ms = Math.floor((t-Math.floor(t))*1000);
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+}
+
+class SyncPlayer{
+  constructor(key, segs){
+    this.audio   = document.getElementById(`audio-${key}`);
+    this.transEl = document.getElementById(`trans-${key}`);
+    this.idx = -1;
+    this.segments = segs.slice().sort((a,b)=>a.start-b.start);
+    for(let i=0;i<this.segments.length;i++){
+      const cur=this.segments[i], nxt=this.segments[i+1];
+      if (cur.end == null) cur.end = nxt ? nxt.start : Infinity;
+    }
+    this.shouldScroll = false; // 仅在用户主动跳转时滚动
+    this.render(); this.bind();
+  }
+  esc(s){
+    return String(s||'').replace(/[&<>"']/g, ch => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]
+    ));
+  }
+  render(){https://github.com/YangXusheng-yxs/U-Codec.git
+    this.segments.forEach((seg,i)=>{
+      const d = document.createElement('div');
+      d.className = 'line';
+      d.dataset.idx = i;
+      d.innerHTML = `
+        <div class="ts">${mmssms(seg.start)}</div>
+        <div class="spk">${this.esc(seg.speaker || '')}</div>
+        <div class="txt">${this.esc(seg.text)}</div>
+      `;
+      d.onclick = () => this.seek(seg.start, true, true);
+      this.transEl.appendChild(d);
+    });
+  }
+  seek(t, autoplay=false, scroll=false){
+    this.shouldScroll = !!scroll;
+    this.audio.currentTime = Math.max(0, t);
+    if (autoplay) this.audio.play().catch(()=>{});
+  }
+  findIdx(t){
+    let lo=0, hi=this.segments.length-1, ans=-1;
+    while (lo<=hi){
+      const mid=(lo+hi)>>1, seg=this.segments[mid];
+      if (t < seg.start) hi=mid-1;
+      else if (t >= seg.end) lo=mid+1;
+      else { ans=mid; break; }
+    }
+    return ans;
+  }
+  setActive(i, scroll=true){
+    const prev = this.idx >= 0 ? this.transEl.querySelector(`.line[data-idx="${this.idx}"]`) : null;
+    const next = i >= 0 ? this.transEl.querySelector(`.line[data-idx="${i}"]`) : null;
+
+    if (i === this.idx){
+      if (scroll && next){
+        const c=this.transEl;
+        // 滚动到顶部，而不是中心
+        const targetTop = next.offsetTop - c.offsetTop;
+        const maxTop = c.scrollHeight - c.clientHeight;
+        c.scrollTo({ top: Math.max(0, Math.min(targetTop, maxTop)), behavior: 'smooth' });
+      }
+      return;
+    }
+    if (prev) prev.classList.remove('active');
+    if (next){
+      next.classList.add('active');
+      if (scroll){
+        const c=this.transEl;
+        // 滚动到顶部，而不是中心
+        const targetTop = next.offsetTop - c.offsetTop;
+        const maxTop = c.scrollHeight - c.clientHeight;
+        c.scrollTo({ top: Math.max(0, Math.min(targetTop, maxTop)), behavior: 'smooth' });
+      }
+    }
+    this.idx = i;
+  }
+  onTime(){https://github.com/YangXusheng-yxs/U-Codec.gitime);
+    // 播放时始终启用滚动，除非音频已暂停
+    const doScroll = !this.audio.paused;
+    this.setActive(i, doScroll);
+  }
+  bind(){
+    const t = () => this.onTime();
+    this.audio.addEventListener('timeupdate', t);
+    this.audio.addEventListener('seeked',  () => { this.shouldScroll = true; this.onTime(); });
+    this.audio.addEventListener('seeking', () => { this.shouldScroll = true; });
+    this.audio.addEventListener('play', t);
+    this.audio.addEventListener('loadedmetadata', ()=>{
+      const dur = isFinite(this.audio.duration) ? this.audio.duration : Infinity;
+      for (let i=0;i<this.segments.length;i++){
+        if (this.segments[i].end === Infinity) this.segments[i].end = dur;
+      }
+    });
+  }
+https://github.com/YangXusheng-yxs/U-Codec.git
