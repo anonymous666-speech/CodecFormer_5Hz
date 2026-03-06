@@ -203,32 +203,31 @@
   <!-- 首页：和后面 demo 自然续上 -->
   <section class="page" id="overview">
     <header>
-      <h1 style="font-size: 2.3em;">U-Codec: Ultra Low Frame-rate Neural Speech Codec for Fast High-fidelity Speech Generation</h1>
+      <h1 style="font-size: 2.3em;">U-Codec: Neural Speech Codec under Extreme Temporal Compression for Fast High-fidelity Speech Generation</h1>
       <!-- <p class="links" style="text-align:center; margin:0 0 4px;">
         <a href="https://aka.ms/GeneralAI" target="_blank">MSRA GeneralAI Group</a>
       </p> -->
       <p class="links" style="text-align:center; margin:0 0 14px;">
-        <a href="https://www.arxiv.org/abs/2510.16718" target="_blank">📄 Report</a>
         <span class="sep">·</span>
-        <a href="https://github.com/YangXusheng-yxs/CodecFormer_5Hz" target="_blank"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> Code</a>
+        <a href="https://github.com/anonymous666-speech/CodecFormer_5Hz_Project" target="_blank"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> Code</a>
         <span class="sep">·</span>
-        <a href="https://huggingface.co/shaunxsyang/U-Codec" target="_blank">🤗 Hugging Face</a>
+       
 
       </p>
 
       <p class="muted" style="margin:0;">
-        We propose <b >U-Codec</b>, an <b >U</b>ltra low frame-rate neural speech <b >Codec</b> that achieves high-fidelity reconstruction and fast generation via an extremely frame-rate at 5Hz (5 frames per second). 
-Extreme compression at 5Hz typically leads to severe intelligibility and spectral detail loss, we overcome this by integrating a Transformer-based inter-frame long-term dependency module and systematically optimizing residual vector quantization (RVQ) depth and codebook size. 
-Moreover, we apply U-Codec into a large language model (LLM)-based auto-regressive TTS model, which leverages global and local hierarchical architecture to effectively capture dependencies across multi-layer tokens. We extend its application to from 3 RVQ at 50Hz up to 32 RVQ layers at 5Hz.
-Experimental results demonstrate that U-Codec improves LLM-based TTS inference speed by around 3 x  over high-frame-rate codecs, while preserving similarity and naturalness. 
-These results validate the feasibility of using highly compressed 5Hz discrete tokens for fast, high-quality speech synthesis.
+        We propose <b >U-Codec</b>, an <b >U</b>ltra low frame-rate neural speech <b >Codec</b> that achieves high-fidelity reconstruction and fast speech generation at a frame-rate of 5Hz (5 frames per second).  
+Extreme temporal compression typically leads to severe intelligibility and spectral detail loss. We overcome this by introducing a Transformer-based inter-frame long-term dependency module and systematically exploring residual vector quantization (RVQ) depth and codebook size to identify optimal configurations.
+Moreover, we apply U-Codec to a large language model (LLM)-based auto-regressive TTS model, which leverages global and local hierarchical architecture to effectively capture dependencies across multi-layer tokens. 
+        Experiments demonstrate that U-Codec improves LLM-based TTS inference speed by 3$\times$ over high-frame-rate codecs while maintaining similarity and naturalness. 
+These results validate the feasibility of using 5Hz discrete tokens for fast and high-fidelity speech synthesis.
       </p>
       
       <div style="display:flex; justify-content:center; align-items:flex-start; gap:60px; margin:20px 0; width:100%;">
         <div style="flex:1; text-align:center;">
           <img src="assets/image/fig1.png" alt="U-Codec Framework" style="width:100%; height:400px; object-fit:contain;">
         <p class="muted" style="margin:0; font-family: 'Cambria', 'Garamond', 'Times New Roman', serif; font-size: 16px; color: #111; text-align:left;">
-        <b > Fig.1 Reconstruct quality on varying the frame rate of different codecs, where bubble size indicates the number of RVQ layers. Compared to previous systems, such as EnCodec, Mimi, and DAC operating at higher frame rates, our proposed codec achieves competitive PESQ performance under ultra low frame rates (5Hz). </b>
+        <b > Fig.1 Preliminary experiments on varying the frame rate and RVQ depth of different codecs. Bubble size indicates the number of RVQ layers. Our method achieves competitive PESQ performance under ultra low frame rates (5–12.5Hz), demonstrating the effectiveness of the tokenizer with multi-layer RVQ. EnCodec, Mimi, and DAC operate at higher frame rates. </b>
       </p>
         </div>
         <div style="flex:1; text-align:center;">
@@ -747,7 +746,7 @@ These results validate the feasibility of using highly compressed 5Hz discrete t
 High-fidelity Speech Generation},
   author    = {Anonymous authors},
   booktitle = {arXiv},·
-  year      = {2025}
+  year      = {2026}
 }</code></pre>
 </section>
 
